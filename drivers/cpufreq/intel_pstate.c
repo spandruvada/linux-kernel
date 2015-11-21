@@ -141,6 +141,7 @@ struct cpu_defaults {
 	struct pstate_funcs funcs;
 };
 
+static inline int32_t intel_pstate_get_busy(struct cpudata *cpu);
 static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu);
 
 static struct pstate_adjust_policy pid_params;
@@ -762,7 +763,7 @@ static struct cpu_defaults silvermont_params = {
 		.set = atom_set_pstate,
 		.get_scaling = silvermont_get_scaling,
 		.get_vid = atom_get_vid,
-		.get_busy_percent = intel_pstate_get_scaled_busy,
+		.get_busy_percent = intel_pstate_get_busy,
 	},
 };
 
@@ -783,7 +784,7 @@ static struct cpu_defaults airmont_params = {
 		.set = atom_set_pstate,
 		.get_scaling = airmont_get_scaling,
 		.get_vid = atom_get_vid,
-		.get_busy_percent = intel_pstate_get_scaled_busy,
+		.get_busy_percent = intel_pstate_get_busy,
 	},
 };
 
@@ -928,6 +929,24 @@ static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
 	delay = msecs_to_jiffies(pid_params.sample_rate_ms);
 	mod_timer_pinned(&cpu->timer, jiffies + delay);
 }
+
+static inline int32_t intel_pstate_get_busy(struct cpudata *cpu)
+{
+	struct sample *sample = &cpu->sample;
+	int32_t cpu_load;
+
+	/*
+	 * The load can be estimated as the ratio of the mperf counter
+	 * running at a constant frequency only during active periods
+	 * (C0) and the time stamp counter running at the same frequency
+	 * also during C-states.
+	 */
+	cpu_load = div64_u64(100 * sample->mperf, sample->tsc);
+
+
+	return int_tofp(cpu_load);
+}
+
 
 static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
 {
