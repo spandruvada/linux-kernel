@@ -113,6 +113,7 @@ struct cpudata {
 	u64	prev_mperf;
 	u64	prev_tsc;
 	struct sample sample;
+	u64 prev_cummulative_iowait;
 };
 
 static struct cpudata **all_cpu_data;
@@ -933,7 +934,20 @@ static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
 static inline int32_t intel_pstate_get_busy(struct cpudata *cpu)
 {
 	struct sample *sample = &cpu->sample;
+	u64 cummulative_iowait, delta_iowait_us;
+	u64 delta_iowait_mperf;
+	u64 mperf, now;
 	int32_t cpu_load;
+
+	cummulative_iowait = get_cpu_iowait_time_us(cpu->cpu, &now);
+
+	/* Convert iowait time into number of IO cycles spent at max_freq */
+	delta_iowait_us = cummulative_iowait - cpu->prev_cummulative_iowait;
+	delta_iowait_mperf = div64_u64(delta_iowait_us * cpu->pstate.scaling *
+		cpu->pstate.max_pstate, 1000);
+
+	mperf = cpu->sample.mperf + delta_iowait_mperf;
+	cpu->prev_cummulative_iowait = cummulative_iowait;
 
 	/*
 	 * The load can be estimated as the ratio of the mperf counter
@@ -941,8 +955,7 @@ static inline int32_t intel_pstate_get_busy(struct cpudata *cpu)
 	 * (C0) and the time stamp counter running at the same frequency
 	 * also during C-states.
 	 */
-	cpu_load = div64_u64(100 * sample->mperf, sample->tsc);
-
+	cpu_load = div64_u64(100 * mperf, sample->tsc);
 
 	return int_tofp(cpu_load);
 }
