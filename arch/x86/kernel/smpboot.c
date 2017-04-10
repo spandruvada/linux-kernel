@@ -146,6 +146,8 @@ static inline void smpboot_restore_warm_reset_vector(void)
 	*((volatile u32 *)phys_to_virt(TRAMPOLINE_PHYS_LOW)) = 0;
 }
 
+static void set_cpu_max_freq(void);
+
 /*
  * Report back to the Boot Processor during boot time or to the caller processor
  * during CPU online.
@@ -186,6 +188,8 @@ static void smp_callin(void)
 	 * calibrate_delay() and notify_cpu_starting().
 	 */
 	set_cpu_sibling_map(raw_smp_processor_id());
+
+	set_cpu_max_freq();
 
 	/*
 	 * Get our bogomips.
@@ -1224,7 +1228,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
 	set_sched_topology(x86_topology);
 
 	set_cpu_sibling_map(0);
-
+	set_cpu_max_freq();
 	smp_sanity_check();
 
 	switch (apic_intr_mode) {
@@ -1639,3 +1643,193 @@ void native_play_dead(void)
 }
 
 #endif
+
+/*
+ * APERF/MPERF frequency ratio computation.
+ *
+ * The scheduler wants to do frequency invariant accounting and needs a <1
+ * ratio to account for the 'current' frequency.
+ *
+ * Since the frequency on x86 is controlled by micro-controller and our P-state
+ * setting is little more than a request/hint, we need to observe the effective
+ * frequency. We do this with APERF/MPERF.
+ *
+ * One complication is that the APERF/MPERF ratio can be >1, specifically
+ * APERF/MPERF gives the ratio relative to the max non-turbo P-state. Therefore
+ * we need to re-normalize the ratio.
+ *
+ * We do this by tracking the max APERF/MPERF ratio previously observed and
+ * scaling our MPERF delta with that. Every time our ratio goes over 1, we
+ * proportionally scale up our old max.
+ *
+ * The down-side to this runtime max search is that you have to trigger the
+ * actual max frequency before your scale is right. Therefore allow
+ * architectures to initialize the max ratio on CPU bringup.
+ */
+
+static DEFINE_PER_CPU(u64, arch_prev_aperf);
+static DEFINE_PER_CPU(u64, arch_prev_mperf);
+static DEFINE_PER_CPU(u64, arch_prev_max_freq) = SCHED_CAPACITY_SCALE;
+
+static bool turbo_disabled(void)
+{
+	u64 misc_en;
+	int err;
+
+	err = rdmsrl_safe(MSR_IA32_MISC_ENABLE, &misc_en);
+	if (err)
+		return false;
+
+	return (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE);
+}
+
+static bool atom_set_cpu_max_freq(void)
+{
+	u64 ratio, turbo_ratio;
+	int err;
+
+	if (turbo_disabled()) {
+		this_cpu_write(arch_prev_max_freq, SCHED_CAPACITY_SCALE);
+		return true;
+	}
+
+	err = rdmsrl_safe(MSR_ATOM_CORE_RATIOS, &ratio);
+	if (err)
+		return false;
+
+	err = rdmsrl_safe(MSR_ATOM_CORE_TURBO_RATIOS, &turbo_ratio);
+	if (err)
+		return false;
+
+	ratio = (ratio >> 16) & 0x7F;     /* max P state ratio */
+	turbo_ratio = turbo_ratio & 0x7F; /* 1C turbo ratio */
+
+	this_cpu_write(arch_prev_max_freq,
+			 div_u64(turbo_ratio * SCHED_CAPACITY_SCALE, ratio));
+	return true;
+}
+
+#include <asm/cpu_device_id.h>
+#include <asm/intel-family.h>
+
+#define ICPU(model) \
+	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_APERFMPERF, 0}
+
+static const struct x86_cpu_id intel_turbo_ratio_adjust[] __initconst = {
+	ICPU(INTEL_FAM6_XEON_PHI_KNL),
+	ICPU(INTEL_FAM6_XEON_PHI_KNL),
+	{}
+};
+
+static bool core_set_cpu_max_freq(void)
+{
+	const struct x86_cpu_id *id;
+	u64 ratio, turbo_ratio;
+	int err;
+
+	if (turbo_disabled()) {
+		this_cpu_write(arch_prev_max_freq, SCHED_CAPACITY_SCALE);
+		return true;
+	}
+
+	err = rdmsrl_safe(MSR_PLATFORM_INFO, &ratio);
+	if (err)
+		return false;
+
+	err = rdmsrl_safe(MSR_TURBO_RATIO_LIMIT, &turbo_ratio);
+	if (err)
+		return false;
+
+	ratio = (ratio >> 8) & 0xFF;      /* base ratio */
+	id = x86_match_cpu(intel_turbo_ratio_adjust);
+	if (id)
+		turbo_ratio = (turbo_ratio >> 8) & 0xFF; /* 1C turbo ratio */
+	else
+		turbo_ratio = turbo_ratio & 0xFF; /* 1C turbo ratio */
+
+	this_cpu_write(arch_prev_max_freq,
+			 div_u64(turbo_ratio * SCHED_CAPACITY_SCALE, ratio));
+	return true;
+}
+
+static void intel_set_cpu_max_freq(void)
+{
+	if (atom_set_cpu_max_freq())
+		return;
+
+	if (core_set_cpu_max_freq())
+		return;
+}
+
+static void set_cpu_max_freq(void)
+{
+	u64 aperf, mperf;
+
+	if (!boot_cpu_has(X86_FEATURE_APERFMPERF))
+		return;
+
+	switch (boot_cpu_data.x86_vendor) {
+	case X86_VENDOR_INTEL:
+		intel_set_cpu_max_freq();
+		break;
+	default:
+		break;
+	}
+
+	rdmsrl(MSR_IA32_APERF, aperf);
+	rdmsrl(MSR_IA32_MPERF, mperf);
+
+	this_cpu_write(arch_prev_aperf, aperf);
+	this_cpu_write(arch_prev_mperf, mperf);
+}
+
+DEFINE_PER_CPU(unsigned long, arch_cpu_freq);
+
+static bool tick_disable;
+
+void arch_scale_freq_tick(void)
+{
+	u64 freq, max_freq = this_cpu_read(arch_prev_max_freq);
+	u64 aperf, mperf;
+	u64 acnt, mcnt;
+
+	if (!static_cpu_has(X86_FEATURE_APERFMPERF) || tick_disable)
+		return;
+
+	rdmsrl(MSR_IA32_APERF, aperf);
+	rdmsrl(MSR_IA32_MPERF, mperf);
+
+	acnt = aperf - this_cpu_read(arch_prev_aperf);
+	mcnt = mperf - this_cpu_read(arch_prev_mperf);
+	if (!mcnt)
+		return;
+
+	this_cpu_write(arch_prev_aperf, aperf);
+	this_cpu_write(arch_prev_mperf, mperf);
+
+	acnt <<= 2*SCHED_CAPACITY_SHIFT;
+	mcnt *= max_freq;
+
+	freq = div64_u64(acnt, mcnt);
+
+	if (unlikely(freq > SCHED_CAPACITY_SCALE)) {
+		max_freq *= freq;
+		max_freq >>= SCHED_CAPACITY_SHIFT;
+
+		this_cpu_write(arch_prev_max_freq, max_freq);
+
+		freq = SCHED_CAPACITY_SCALE;
+	}
+
+	this_cpu_write(arch_cpu_freq, freq);
+}
+
+void x86_arch_scale_freq_tick_enable(void)
+{
+	tick_disable = false;
+}
+
+void x86_arch_scale_freq_tick_disable(void)
+{
+	tick_disable = true;
+}
