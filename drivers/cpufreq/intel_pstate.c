@@ -222,6 +222,10 @@ struct global_params {
  *			preference/bias
  * @epp_saved:		Saved EPP/EPB during system suspend or CPU offline
  *			operation
+ * @csd:		A structure used to issue SMP async call, which
+ *			defines callback and arguments
+ * @epp_boost:		EPP is boosed on this CPU
+ * @hwp_req_cached:	Cached value of the last HWP request MSR
  *
  * This structure stores per CPU instance data for all CPUs.
  */
@@ -254,6 +258,9 @@ struct cpudata {
 	s16 epp_policy;
 	s16 epp_default;
 	s16 epp_saved;
+	call_single_data_t csd;
+	bool epp_boost;
+	u64 hwp_req_cached;
 };
 
 static struct cpudata **all_cpu_data;
@@ -286,6 +293,7 @@ static struct pstate_funcs pstate_funcs __read_mostly;
 
 static int hwp_active __read_mostly;
 static bool per_cpu_limits __read_mostly;
+static int hwp_epp_boost __read_mostly;
 
 static struct cpufreq_driver *intel_pstate_driver __read_mostly;
 
@@ -764,6 +772,7 @@ update_epp:
 		intel_pstate_set_epb(cpu, epp);
 	}
 skip_epp:
+	cpu_data->hwp_req_cached = value;
 	wrmsrl_on_cpu(cpu, MSR_HWP_REQUEST, value);
 }
 
@@ -1524,6 +1533,74 @@ static void intel_pstate_adjust_pstate(struct cpudata *cpu)
 		fp_toint(cpu->iowait_boost * 100));
 }
 
+static int hwp_boost_hold_time_ms = 10;
+
+static inline void intel_pstate_epp_up(struct cpudata *cpu)
+{
+	u64 hwp_req;
+
+	hwp_req = cpu->hwp_req_cached & ~GENMASK_ULL(31, 24);
+	wrmsrl(MSR_HWP_REQUEST, hwp_req);
+}
+
+static inline void intel_pstate_epp_down(struct cpudata *cpu)
+{
+	wrmsrl(MSR_HWP_REQUEST, cpu->hwp_req_cached);
+}
+
+static void intel_pstate_update_epp_up_local(void *arg)
+{
+	struct cpudata *cpu = arg;
+
+	intel_pstate_epp_up(cpu);
+}
+
+static void csd_init(struct cpudata *cpu)
+{
+	cpu->csd.flags = 0;
+	cpu->csd.func = intel_pstate_update_epp_up_local;
+	cpu->csd.info = cpu;
+}
+
+static inline void intel_pstate_update_util_hwp(struct update_util_data *data,
+						u64 time, unsigned int flags)
+{
+	struct cpudata *cpu = container_of(data, struct cpudata, update_util);
+
+	/* Set iowait_boost flag and update time */
+	if (flags & SCHED_CPUFREQ_IOWAIT) {
+		cpu->last_update = time;
+		cpu->iowait_boost = true;
+	}
+
+	/*
+	 * If the boost is active, we will remove it after timeout on local
+	 * CPU only.
+	 */
+	if (cpu->epp_boost) {
+		if (smp_processor_id() == cpu->cpu) {
+			bool expired;
+
+			expired = time_after64(time, cpu->last_update +
+					       (hwp_boost_hold_time_ms * NSEC_PER_MSEC));
+			if (expired) {
+				intel_pstate_epp_down(cpu);
+				cpu->epp_boost = false;
+				cpu->iowait_boost = false;
+			}
+		}
+		return;
+	}
+
+	if (cpu->iowait_boost) {
+		cpu->epp_boost = true;
+		if (smp_processor_id() == cpu->cpu)
+			intel_pstate_epp_up(cpu);
+		else
+			smp_call_function_single_async(cpu->cpu, &cpu->csd);
+	}
+}
+
 static void intel_pstate_update_util(struct update_util_data *data, u64 time,
 				     unsigned int flags)
 {
@@ -1685,7 +1762,7 @@ static void intel_pstate_set_update_util_hook(unsigned int cpu_num)
 {
 	struct cpudata *cpu = all_cpu_data[cpu_num];
 
-	if (hwp_active)
+	if (hwp_active && !hwp_epp_boost)
 		return;
 
 	if (cpu->update_util_set)
@@ -1693,8 +1770,12 @@ static void intel_pstate_set_update_util_hook(unsigned int cpu_num)
 
 	/* Prevent intel_pstate_update_util() from using stale data. */
 	cpu->sample.time = 0;
-	cpufreq_add_update_util_hook(cpu_num, &cpu->update_util,
-				     intel_pstate_update_util);
+	if (hwp_active)
+		cpufreq_add_update_util_hook(cpu_num, &cpu->update_util,
+					     intel_pstate_update_util_hwp);
+	else
+		cpufreq_add_update_util_hook(cpu_num, &cpu->update_util,
+					     intel_pstate_update_util);
 	cpu->update_util_set = true;
 }
 
@@ -1808,7 +1889,11 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
 	}
 
 	if (hwp_active) {
-		x86_arch_scale_freq_tick_disable();
+		if (hwp_epp_boost)
+			x86_arch_scale_freq_tick_enable();
+		else
+			x86_arch_scale_freq_tick_disable();
+
 		intel_pstate_hwp_set(policy->cpu);
 	}
 
@@ -1895,6 +1980,9 @@ static int __intel_pstate_cpu_init(struct cpufreq_policy *policy)
 	policy->cpuinfo.max_freq *= cpu->pstate.scaling;
 
 	intel_pstate_init_acpi_perf_limits(policy);
+
+	if (hwp_active)
+		csd_init(cpu);
 
 	policy->fast_switch_possible = true;
 
@@ -2349,6 +2437,10 @@ static int __init intel_pstate_setup(char *str)
 	if (!strcmp(str, "support_acpi_ppc"))
 		acpi_ppc = true;
 #endif
+	if (!strcmp(str, "hwp_epp_boost")) {
+		pr_info("HWP boost mode enabled\n");
+		hwp_epp_boost = 1;
+	}
 
 	return 0;
 }
