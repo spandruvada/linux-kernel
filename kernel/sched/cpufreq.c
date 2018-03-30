@@ -61,3 +61,23 @@ void cpufreq_remove_update_util_hook(int cpu)
 	rcu_assign_pointer(per_cpu(cpufreq_update_util_data, cpu), NULL);
 }
 EXPORT_SYMBOL_GPL(cpufreq_remove_update_util_hook);
+
+
+/**
+ * cpufreq_get_sched_util - Get utilization values.
+ * @cpu: The targetted CPU.
+ *
+ * Get the CFS, DL and max utilization.
+ * This function allows cpufreq driver outside the kernel/sched to access
+ * utilization value for a CPUs run queue.
+ */
+void cpufreq_get_sched_util(int cpu, unsigned long *util_cfs,
+			    unsigned long *util_dl, unsigned long *max)
+{
+	struct rq *rq = cpu_rq(cpu);
+
+	*max = arch_scale_cpu_capacity(NULL, cpu);
+	*util_cfs = cpu_util_cfs(rq);
+	*util_dl  = cpu_util_dl(rq);
+}
+EXPORT_SYMBOL_GPL(cpufreq_get_sched_util);
