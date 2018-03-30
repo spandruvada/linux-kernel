@@ -1800,14 +1800,17 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
 		 * NOHZ_FULL CPUs need this as the governor callback may not
 		 * be invoked on them.
 		 */
+		x86_arch_scale_freq_tick_disable();
 		intel_pstate_clear_update_util_hook(policy->cpu);
 		intel_pstate_max_within_limits(cpu);
 	} else {
 		intel_pstate_set_update_util_hook(policy->cpu);
 	}
 
-	if (hwp_active)
+	if (hwp_active) {
+		x86_arch_scale_freq_tick_disable();
 		intel_pstate_hwp_set(policy->cpu);
+	}
 
 	mutex_unlock(&intel_pstate_limits_lock);
 
