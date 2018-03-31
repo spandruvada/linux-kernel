@@ -226,6 +226,7 @@ struct global_params {
  *			defines callback and arguments
  * @epp_boost:		EPP is boosed on this CPU
  * @hwp_req_cached:	Cached value of the last HWP request MSR
+ * @migrate_hint:	Set when scheduler indicates thread migration
  *
  * This structure stores per CPU instance data for all CPUs.
  */
@@ -261,6 +262,7 @@ struct cpudata {
 	call_single_data_t csd;
 	bool epp_boost;
 	u64 hwp_req_cached;
+	bool migrate_hint;
 };
 
 static struct cpudata **all_cpu_data;
@@ -1534,6 +1536,7 @@ static void intel_pstate_adjust_pstate(struct cpudata *cpu)
 }
 
 static int hwp_boost_hold_time_ms = 10;
+static int hwp_boost_threshold_busy_pct;
 
 static inline void intel_pstate_epp_up(struct cpudata *cpu)
 {
@@ -1562,13 +1565,56 @@ static void csd_init(struct cpudata *cpu)
 	cpu->csd.info = cpu;
 }
 
+static inline void intel_pstate_update_busy_threshold(struct cpudata *cpu)
+{
+	if (!hwp_boost_threshold_busy_pct) {
+		int min_freq, max_freq;
+
+		min_freq  = cpu->pstate.min_pstate * cpu->pstate.scaling;
+		update_turbo_state();
+		max_freq =  global.turbo_disabled || global.no_turbo ?
+				cpu->pstate.max_freq : cpu->pstate.turbo_freq;
+
+		/*
+		 * We are guranteed to get atleast min P-state. If we assume
+		 * P-state is proportional to load (such that 10% load
+		 * increase will result in 10% P-state increase), we will
+		 * get at least min P-state till we have atleast
+		 * (min * 100/max) percent cpu load. So any load less than
+		 * than this this we shouldn't do any boost. Then boosting
+		 * is not free, we will add atleast 20% offset.
+		 */
+		hwp_boost_threshold_busy_pct = min_freq * 100 / max_freq;
+		hwp_boost_threshold_busy_pct += 20;
+		printk(KERN_ERR "hwp_boost_threshold_busy_pct %d\n", hwp_boost_threshold_busy_pct);
+	}
+}
+
+static inline int intel_pstate_get_sched_util(struct cpudata *cpu)
+{
+	unsigned long util_cfs, util_dl, max, util;
+
+	cpufreq_get_sched_util(cpu->cpu, &util_cfs, &util_dl, &max);
+	util = min(util_cfs + util_dl, max);
+	return util * 100 / max;
+}
+
 static inline void intel_pstate_update_util_hwp(struct update_util_data *data,
 						u64 time, unsigned int flags)
 {
 	struct cpudata *cpu = container_of(data, struct cpudata, update_util);
 
-	/* Set iowait_boost flag and update time */
-	if (flags & SCHED_CPUFREQ_IOWAIT) {
+	/* Set iowait_boost, migrate flags and update time */
+	if (flags & SCHED_CPUFREQ_MIGRATION) {
+		cpu->migrate_hint = true;
+		cpu->last_update = time;
+		/*
+		 * The rq utilization data is not migrated yet to the new CPU
+		 * rq, so wait for call on local CPU to boost.
+		 */
+		if (smp_processor_id() != cpu->cpu)
+			return;
+	} else if (flags & SCHED_CPUFREQ_IOWAIT) {
 		cpu->last_update = time;
 		cpu->iowait_boost = true;
 	}
@@ -1587,6 +1633,7 @@ static inline void intel_pstate_update_util_hwp(struct update_util_data *data,
 				intel_pstate_epp_down(cpu);
 				cpu->epp_boost = false;
 				cpu->iowait_boost = false;
+				cpu->migrate_hint = false;
 			}
 		}
 		return;
@@ -1598,6 +1645,17 @@ static inline void intel_pstate_update_util_hwp(struct update_util_data *data,
 			intel_pstate_epp_up(cpu);
 		else
 			smp_call_function_single_async(cpu->cpu, &cpu->csd);
+		return;
+	}
+
+	/* Ignore if the migrated thread has low utilization */
+	if (cpu->migrate_hint && smp_processor_id() == cpu->cpu) {
+		int util = intel_pstate_get_sched_util(cpu);
+		if (util >= hwp_boost_threshold_busy_pct) {
+			cpu->epp_boost = true;
+			intel_pstate_epp_up(cpu);
+		}
+		return;
 	}
 }
 
@@ -1981,8 +2039,10 @@ static int __intel_pstate_cpu_init(struct cpufreq_policy *policy)
 
 	intel_pstate_init_acpi_perf_limits(policy);
 
-	if (hwp_active)
+	if (hwp_active) {
 		csd_init(cpu);
+		intel_pstate_update_busy_threshold(cpu);
+	}
 
 	policy->fast_switch_possible = true;
 
