@@ -1538,6 +1538,131 @@ static void intel_pstate_adjust_pstate(struct cpudata *cpu)
 static int hwp_boost_hold_time_ms = 10;
 static int hwp_boost_threshold_busy_pct;
 
+static int hwp_boost_io;
+static int hwp_boost_migration;
+
+static ssize_t hwp_epp_boost_ops_write(struct file *file,
+				       const char __user
+				       *userbuf, size_t count, loff_t *ppos)
+{
+	u8 val;
+
+	if (kstrtou8_from_user(userbuf, count, 0, &val)) {
+		return -EFAULT;
+	}
+
+	hwp_epp_boost = val;
+
+	intel_pstate_update_policies();
+
+	return count;
+}
+
+static ssize_t hwp_epp_boost_ops_read(struct file *file, char __user *user_buf,
+				      size_t count, loff_t *ppos)
+{
+	char buf[32];
+	unsigned int len;
+
+	len = sprintf(buf, "%d\n", hwp_epp_boost);
+	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+}
+
+static const struct file_operations hwp_epp_boost_ops = {
+	.read           = hwp_epp_boost_ops_read,
+	.write          = hwp_epp_boost_ops_write,
+	.llseek         = default_llseek,
+};
+
+static ssize_t hwp_epp_boost_pct_ops_write(struct file *file,
+				       const char __user
+				       *userbuf, size_t count, loff_t *ppos)
+{
+	u8 val;
+
+	if (kstrtou8_from_user(userbuf, count, 0, &val)) {
+		return -EFAULT;
+	}
+
+	hwp_boost_threshold_busy_pct = val;
+
+	return count;
+}
+
+static ssize_t hwp_epp_boost_pct_ops_read(struct file *file, char __user *user_buf,
+				      size_t count, loff_t *ppos)
+{
+	char buf[32];
+	unsigned int len;
+
+	len = sprintf(buf, "%d\n", hwp_boost_threshold_busy_pct);
+	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+}
+
+static const struct file_operations hwp_epp_boost_pct_ops = {
+	.read           = hwp_epp_boost_pct_ops_read,
+	.write          = hwp_epp_boost_pct_ops_write,
+	.llseek         = default_llseek,
+};
+
+static ssize_t hwp_epp_boost_hold_ops_write(struct file *file,
+				       const char __user
+				       *userbuf, size_t count, loff_t *ppos)
+{
+	u16 val;
+
+	if (kstrtou16_from_user(userbuf, count, 0, &val)) {
+		return -EFAULT;
+	}
+
+	hwp_boost_hold_time_ms = val;
+
+	return count;
+}
+
+static ssize_t hwp_epp_boost_hold_ops_read(struct file *file, char __user *user_buf,
+				      size_t count, loff_t *ppos)
+{
+	char buf[32];
+	unsigned int len;
+
+	len = sprintf(buf, "%d\n", hwp_boost_hold_time_ms);
+	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+}
+
+static const struct file_operations hwp_epp_boost_hold_ops = {
+	.read           = hwp_epp_boost_hold_ops_read,
+	.write          = hwp_epp_boost_hold_ops_write,
+	.llseek         = default_llseek,
+};
+
+static void intel_pstate_debugfs_setup(void)
+{
+	struct dentry *debugfs;
+
+	debugfs = debugfs_create_dir("intel_pstate", NULL);
+	if (!debugfs)
+		return;
+
+	debugfs_create_u32("hwp_boost_io_count", 0444, debugfs,
+			   (u32 *)&hwp_boost_io);
+
+	debugfs_create_u32("hwp_boost_migration_count", 0444, debugfs,
+			   (u32 *)&hwp_boost_migration);
+
+	debugfs_create_file("hwp_epp_boost",
+			    0644, debugfs, NULL,
+			    &hwp_epp_boost_ops);
+
+	debugfs_create_file("hwp_epp_boost_bzy_pct",
+			    0644, debugfs, NULL,
+			    &hwp_epp_boost_pct_ops);
+
+	debugfs_create_file("hwp_epp_boost_hold_time_ms",
+			    0644, debugfs, NULL,
+			    &hwp_epp_boost_hold_ops);
+}
+
 static inline void intel_pstate_epp_up(struct cpudata *cpu)
 {
 	u64 hwp_req;
@@ -1641,6 +1766,7 @@ static inline void intel_pstate_update_util_hwp(struct update_util_data *data,
 
 	if (cpu->iowait_boost) {
 		cpu->epp_boost = true;
+		hwp_boost_io++;
 		if (smp_processor_id() == cpu->cpu)
 			intel_pstate_epp_up(cpu);
 		else
@@ -1653,6 +1779,7 @@ static inline void intel_pstate_update_util_hwp(struct update_util_data *data,
 		int util = intel_pstate_get_sched_util(cpu);
 		if (util >= hwp_boost_threshold_busy_pct) {
 			cpu->epp_boost = true;
+			hwp_boost_migration++;
 			intel_pstate_epp_up(cpu);
 		}
 		return;
@@ -1947,11 +2074,12 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
 	}
 
 	if (hwp_active) {
-		if (hwp_epp_boost)
+		if (hwp_epp_boost) {
 			x86_arch_scale_freq_tick_enable();
-		else
+		} else {
+			intel_pstate_clear_update_util_hook(policy->cpu);
 			x86_arch_scale_freq_tick_disable();
-
+		}
 		intel_pstate_hwp_set(policy->cpu);
 	}
 
@@ -2041,6 +2169,7 @@ static int __intel_pstate_cpu_init(struct cpufreq_policy *policy)
 
 	if (hwp_active) {
 		csd_init(cpu);
+		intel_pstate_debugfs_setup();
 		intel_pstate_update_busy_threshold(cpu);
 	}
 
