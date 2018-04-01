@@ -1541,6 +1541,72 @@ static int hwp_boost_threshold_busy_pct;
 static int hwp_boost_io;
 static int hwp_boost_migration;
 
+static bool disable_io_boost;
+static bool disable_migration_boost;
+
+static ssize_t disable_migration_boost_ops_write(struct file *file,
+				       const char __user
+				       *userbuf, size_t count, loff_t *ppos)
+{
+	u8 val;
+
+	if (kstrtou8_from_user(userbuf, count, 0, &val)) {
+		return -EFAULT;
+	}
+
+	disable_migration_boost = val;
+
+	return count;
+}
+
+static ssize_t disable_migration_boost_ops_read(struct file *file, char __user *user_buf,
+				      size_t count, loff_t *ppos)
+{
+	char buf[32];
+	unsigned int len;
+
+	len = sprintf(buf, "%d\n", disable_migration_boost);
+	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+}
+
+static const struct file_operations disable_migration_boost_ops = {
+	.read           = disable_migration_boost_ops_read,
+	.write          = disable_migration_boost_ops_write,
+	.llseek         = default_llseek,
+};
+
+
+static ssize_t disable_io_boost_ops_write(struct file *file,
+				       const char __user
+				       *userbuf, size_t count, loff_t *ppos)
+{
+	u8 val;
+
+	if (kstrtou8_from_user(userbuf, count, 0, &val)) {
+		return -EFAULT;
+	}
+
+	disable_io_boost = val;
+
+	return count;
+}
+
+static ssize_t disable_io_boost_ops_read(struct file *file, char __user *user_buf,
+				      size_t count, loff_t *ppos)
+{
+	char buf[32];
+	unsigned int len;
+
+	len = sprintf(buf, "%d\n", disable_io_boost);
+	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+}
+
+static const struct file_operations disable_io_boost_ops = {
+	.read           = disable_io_boost_ops_read,
+	.write          = disable_io_boost_ops_write,
+	.llseek         = default_llseek,
+};
+
 static ssize_t hwp_epp_boost_ops_write(struct file *file,
 				       const char __user
 				       *userbuf, size_t count, loff_t *ppos)
@@ -1661,6 +1727,14 @@ static void intel_pstate_debugfs_setup(void)
 	debugfs_create_file("hwp_epp_boost_hold_time_ms",
 			    0644, debugfs, NULL,
 			    &hwp_epp_boost_hold_ops);
+
+	debugfs_create_file("disable_io_boost",
+			    0644, debugfs, NULL,
+			    &disable_io_boost_ops);
+
+	debugfs_create_file("disable_migration_boost",
+			    0644, debugfs, NULL,
+			    &disable_migration_boost_ops);
 }
 
 static inline void intel_pstate_epp_up(struct cpudata *cpu)
@@ -1730,7 +1804,7 @@ static inline void intel_pstate_update_util_hwp(struct update_util_data *data,
 	struct cpudata *cpu = container_of(data, struct cpudata, update_util);
 
 	/* Set iowait_boost, migrate flags and update time */
-	if (flags & SCHED_CPUFREQ_MIGRATION) {
+	if (!disable_migration_boost && (flags & SCHED_CPUFREQ_MIGRATION)) {
 		cpu->migrate_hint = true;
 		cpu->last_update = time;
 		/*
@@ -1739,7 +1813,7 @@ static inline void intel_pstate_update_util_hwp(struct update_util_data *data,
 		 */
 		if (smp_processor_id() != cpu->cpu)
 			return;
-	} else if (flags & SCHED_CPUFREQ_IOWAIT) {
+	} else if (!disable_io_boost && (flags & SCHED_CPUFREQ_IOWAIT)) {
 		cpu->last_update = time;
 		cpu->iowait_boost = true;
 	}
