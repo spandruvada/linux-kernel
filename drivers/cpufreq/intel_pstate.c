@@ -1838,6 +1838,7 @@ static inline void intel_pstate_update_util_hwp(struct update_util_data *data,
 				cpu->migrate_hint = false;
 			}
 		}
+		cpu->last_update = time;
 		return;
 	}
 
