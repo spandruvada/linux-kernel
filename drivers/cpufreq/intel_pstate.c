@@ -1740,8 +1740,11 @@ static void intel_pstate_debugfs_setup(void)
 static inline void intel_pstate_epp_up(struct cpudata *cpu)
 {
 	u64 hwp_req;
+	u8 max = (u8) (cpu->hwp_req_cached >> 8);
 
 	hwp_req = cpu->hwp_req_cached & ~GENMASK_ULL(31, 24);
+	hwp_req = (hwp_req & ~GENMASK_ULL(7,0)) | max;
+
 	wrmsrl(MSR_HWP_REQUEST, hwp_req);
 }
 
