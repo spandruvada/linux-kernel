@@ -34,6 +34,7 @@ static size_t present_cpumask_size;
 static cpu_set_t *present_cpumask;
 static size_t target_cpumask_size;
 static cpu_set_t *target_cpumask;
+static int test_mode;
 static int tdp_level = 0xFF;
 static int fact_bucket = 0xFF;
 static int fact_avx = 0xFF;
@@ -424,13 +425,24 @@ static void create_cpu_map(void)
 	if (!cpu_map)
 		err(3, "cpumap");
 
-	fd = open(pathname, O_RDWR);
-	if (fd < 0)
-		err(-1, "%s open failed", pathname);
+	if (!test_mode) {
+		fd = open(pathname, O_RDWR);
+		if (fd < 0)
+			err(-1, "%s open failed", pathname);
+	}
 
 	for (i = 0; i < topo_max_cpus; ++i) {
 		if (!CPU_ISSET_S(i, present_cpumask_size, present_cpumask))
 			continue;
+
+		if (test_mode) {
+			cpu_map[i].pkg_id = get_physical_package_id(i);
+			cpu_map[i].die_id = get_physical_die_id(i);
+			cpu_map[i].punit_cpu = (i >> 1);
+			debug_printf(" map logical_cpu:%d punit_cpu:%d\n", i,
+				     cpu_map[i].punit_cpu);
+			continue;
+		}
 
 		map.cmd_count = 1;
 		map.cpu_map[0].logical_cpu = i;
@@ -516,6 +528,27 @@ int find_phy_core_num(int logical_cpu)
 	return -EINVAL;
 }
 
+static void test_stub(int command, int sub_command, unsigned int req_data,
+		      unsigned int *resp, unsigned int param)
+{
+	int cmd;
+
+	debug_printf("%s cmd:%x sub_cmd:%x param:%x req:%x\n", __func__,
+		     command, sub_command, param, req_data);
+	cmd = (command & 0xff) << 8 | (sub_command & 0xff);
+	if (sub_command == CONFIG_TDP_SET_TDP_CONTROL ||
+	    sub_command == CONFIG_TDP_SET_LEVEL) {
+		isst_write_reg(cmd, req_data);
+	} else if (command == CONFIG_CLOS) {
+		if (param & BIT(MBOX_CMD_WRITE_BIT))
+			isst_write_reg(cmd, req_data);
+		else
+			isst_read_reg(cmd, resp);
+	} else {
+		isst_read_reg(cmd, resp);
+	}
+}
+
 static int isst_send_mmio_command(unsigned int cpu, unsigned int reg, int write,
 				  unsigned int *value)
 {
@@ -525,6 +558,8 @@ static int isst_send_mmio_command(unsigned int cpu, unsigned int reg, int write,
 	int fd;
 
 	debug_printf("mmio_cmd cpu:%d reg:%d write:%d\n", cpu, reg, write);
+	if (test_mode)
+		return 0;
 
 	fd = open(pathname, O_RDWR);
 	if (fd < 0)
@@ -615,6 +650,11 @@ int isst_send_mbox_command(unsigned int cpu, unsigned char command,
 	mbox_cmds.mbox_cmd[0].parameter = parameter;
 	mbox_cmds.mbox_cmd[0].req_data = req_data;
 
+	if (test_mode) {
+		test_stub(command, sub_command, req_data, resp, parameter);
+		return 0;
+	}
+
 	fd = open(pathname, O_RDWR);
 	if (fd < 0)
 		err(-1, "%s open failed", pathname);
@@ -643,6 +683,9 @@ int isst_send_msr_command(unsigned int cpu, unsigned int msr, int write,
 	struct isst_if_msr_cmds msr_cmds;
 	const char *pathname = "/dev/isst_interface";
 	int fd;
+
+	if (test_mode)
+		return 0;
 
 	fd = open(pathname, O_RDWR);
 	if (fd < 0)
@@ -678,6 +721,9 @@ static int isst_fill_platform_info(void)
 	const char *pathname = "/dev/isst_interface";
 	int fd;
 
+	if (test_mode)
+		return 0;
+
 	fd = open(pathname, O_RDWR);
 	if (fd < 0)
 		err(-1, "%s open failed", pathname);
@@ -702,6 +748,14 @@ static void isst_print_platform_information(void)
 	struct isst_if_platform_info platform_info;
 	const char *pathname = "/dev/isst_interface";
 	int fd;
+
+	if (test_mode) {
+		isst_platform_info.api_version = 1;
+		isst_platform_info.driver_version = 1;
+		isst_platform_info.mbox_supported = 1;
+		isst_platform_info.mmio_supported = 0;
+		return;
+	}
 
 	fd = open(pathname, O_RDWR);
 	if (fd < 0)
@@ -2267,12 +2321,13 @@ static void cmdline(int argc, char **argv)
 		{ "help", no_argument, 0, 'h' },
 		{ "info", no_argument, 0, 'i' },
 		{ "out", required_argument, 0, 'o' },
+		{ "test_mode", no_argument, 0, 't' },
 		{ "version", no_argument, 0, 'v' },
 		{ 0, 0, 0, 0 }
 	};
 
 	progname = argv[0];
-	while ((opt = getopt_long_only(argc, argv, "+c:df:hio:v", long_options,
+	while ((opt = getopt_long_only(argc, argv, "+c:df:hio:tv", long_options,
 				       &option_index)) != -1) {
 		switch (opt) {
 		case 'c':
@@ -2297,6 +2352,10 @@ static void cmdline(int argc, char **argv)
 				fclose(outf);
 			outf = fopen_or_exit(optarg, "w");
 			break;
+		case 't':
+			test_mode = 1;
+			printf("Test mode is ON: It will not send message to hardware!\n");
+			break;
 		case 'v':
 			print_version();
 			break;
@@ -2305,7 +2364,7 @@ static void cmdline(int argc, char **argv)
 		}
 	}
 
-	if (geteuid() != 0) {
+	if (geteuid() != 0 && !test_mode) {
 		fprintf(stderr, "Must run as root\n");
 		exit(0);
 	}
