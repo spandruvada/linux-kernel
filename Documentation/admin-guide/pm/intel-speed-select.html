@@ -1,0 +1,1199 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.14: http://docutils.sourceforge.net/" />
+<title>Intel Speed Select Technology (Intel SST) : User Guide</title>
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7952 2016-07-26 18:15:59Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+.subscript {
+  vertical-align: sub;
+  font-size: smaller }
+
+.superscript {
+  vertical-align: super;
+  font-size: smaller }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left, table.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right, table.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+table.align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+.align-top    {
+  vertical-align: top }
+
+.align-middle {
+  vertical-align: middle }
+
+.align-bottom {
+  vertical-align: bottom }
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="intel-speed-select-technology-intel-sst-user-guide">
+<h1 class="title">Intel Speed Select Technology (Intel SST) : User Guide</h1>
+
+<!-- SPDX-License-Identifier: GPL-2.0 -->
+<p>The Intel Speed Select Technology (Intel SST) provides a powerful new
+collection of features that give more granular control over CPU performance.
+With Intel SST, one server can be configured for power and performance for a
+variety of diverse workload requirements.</p>
+<p>Refer to the links below for an overview of the technology:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://www.intel.com/content/www/us/en/architecture-and-technology/speed-select-technology-article.html">https://www.intel.com/content/www/us/en/architecture-and-technology/speed-select-technology-article.html</a></li>
+<li><a class="reference external" href="https://builders.intel.com/docs/networkbuilders/intel-speed-select-technology-base-frequency-enhancing-performance.pdf">https://builders.intel.com/docs/networkbuilders/intel-speed-select-technology-base-frequency-enhancing-performance.pdf</a></li>
+</ul>
+<p>These capabilities are further enhanced in some of the newer generations of
+server platforms where these features can be enumerated and controlled
+dynamically without pre-configuring via BIOS setup options. This dynamic
+configuration is done via mailbox commands to the hardware. One way to enumerate
+and configure these features is by using the Intel Speed Select utility.</p>
+<p>This document explains how to use the Intel Speed Select tool to enumerate and
+control Intel SST features. This document gives example commands and explains
+how these commands change the power and performance profile of the system under
+test. Using this tool as an example, customers can replicate the messaging
+implemented in the tool in their production software.</p>
+<div class="section" id="intel-speed-select-configuration-tool">
+<h1>intel-speed-select configuration tool</h1>
+<p>Most Linux distribution packages may include the &quot;intel-speed-select&quot; tool. If not,
+it can be built by downloading the Linux kernel tree from kernel.org. Once
+downloaded, the tool can be built without building the full kernel.</p>
+<p>From the kernel tree, run the following commands:</p>
+<pre class="literal-block">
+# cd tools/power/x86/intel-speed-select/
+# make
+# make install
+</pre>
+<div class="section" id="getting-help">
+<h2>Getting Help</h2>
+<p>To get help with the tool, execute the command below:</p>
+<pre class="literal-block">
+# intel-speed-select --help
+</pre>
+<p>The top-level help describes arguments and features. Notice that there is a
+multi-level help structure in the tool. For example, to get help for the feature &quot;perf-profile&quot;:</p>
+<pre class="literal-block">
+# intel-speed-select perf-profile --help
+</pre>
+<p>To get help on a command, another level of help is provided. For example for the command info &quot;info&quot;:</p>
+<pre class="literal-block">
+# intel-speed-select perf-profile info --help
+</pre>
+</div>
+<div class="section" id="intel-speed-select-technology-performance-profile-intel-sst-pp">
+<h2>Intel Speed Select Technology - Performance Profile (Intel SST-PP)</h2>
+<p>This feature allows configuration of a server dynamically based on workload
+performance requirements. This helps users during deployment as they do not have
+to choose a specific server configuration statically.  This Intel Speed Select
+Technology - Performance Profile (Intel SST-PP) feature introduces a mechanism
+that allows multiple optimized performance profiles per system. Each profile
+defines a set of CPUs that need to be online and rest offline to sustain a
+guaranteed base frequency. Once the user issues a command to use a specific
+performance profile and meet CPU online/offline requirement, the user can expect
+a change in the base frequency dynamically. This feature is called
+&quot;perf-profile&quot; when using the Intel Speed Select tool.</p>
+<div class="section" id="number-or-performance-levels">
+<h3>Number or performance levels</h3>
+<p>There can be multiple performance profiles on a system. To get the number of
+profiles, execute the command below:</p>
+<pre class="literal-block">
+# intel-speed-select perf-profile get-config-levels
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+       get-config-levels:4
+package-1
+ die-0
+   cpu-14
+       get-config-levels:4
+</pre>
+<p>On this system under test, there are 4 performance profiles in addition to the
+base performance profile (which is performance level 0).</p>
+</div>
+<div class="section" id="lock-unlock-status">
+<h3>Lock/Unlock status</h3>
+<p>Even if there are multiple performance profiles, it is possible that that they
+are locked. If they are locked, users cannot issue a command to change the
+performance state. It is possible that there is a BIOS setup to unlock or check
+with your system vendor.</p>
+<p>To check if the system is locked, execute the following command:</p>
+<pre class="literal-block">
+# intel-speed-select perf-profile get-lock-status
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+       get-lock-status:0
+package-1
+ die-0
+   cpu-14
+       get-lock-status:0
+</pre>
+<p>In this case, lock status is 0, which means that the system is unlocked.</p>
+</div>
+<div class="section" id="properties-of-a-performance-level">
+<h3>Properties of a performance level</h3>
+<p>To get properties of a specific performance level (For example for the level 0, below), execute the command below:</p>
+<pre class="literal-block">
+# intel-speed-select perf-profile info -l 0
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     perf-profile-level-0
+       cpu-count:28
+       enable-cpu-mask:000003ff,f0003fff
+       enable-cpu-list:0,1,2,3,4,5,6,7,8,9,10,11,12,13,28,29,30,31,32,33,34,35,36,37,38,39,40,41
+       thermal-design-power-ratio:26
+       base-frequency(MHz):2600
+       speed-select-turbo-freq:disabled
+       speed-select-base-freq:disabled
+       ...
+       ...
+</pre>
+<p>Here -l option is used to specify a performance level.</p>
+<p>If the option -l is omitted, then this command will print information about all
+the performance levels. The above command is printing properties of the
+performance level 0.</p>
+<p>For this performance profile, the list of CPUs displayed by the
+&quot;enable-cpu-mask/enable-cpu-list&quot; at the max can be &quot;online.&quot; When that
+condition is met, then base frequency of 2600 MHz can be maintained. To
+understand more, execute &quot;intel-speed-select perf-profile info&quot; for performance
+level 4:</p>
+<pre class="literal-block">
+# intel-speed-select perf-profile info -l 4
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     perf-profile-level-4
+       cpu-count:28
+       enable-cpu-mask:000000fa,f0000faf
+       enable-cpu-list:0,1,2,3,5,7,8,9,10,11,28,29,30,31,33,35,36,37,38,39
+       thermal-design-power-ratio:28
+       base-frequency(MHz):2800
+       speed-select-turbo-freq:disabled
+       speed-select-base-freq:unsupported
+       ...
+       ...
+</pre>
+<p>There are fewer CPUs in the “enable-cpu-mask/enable-cpu-list.” Consequently, if
+the user only keeps these CPUs online and the rest &quot;offline,&quot; then the base
+frequency is increased to 2.8 GHz compared to 2.6 GHz at performance level 0.</p>
+</div>
+<div class="section" id="get-current-performance-level">
+<h3>Get current performance level</h3>
+<p>To get the current performance level, execute:</p>
+<pre class="literal-block">
+# intel-speed-select perf-profile get-config-current-level
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+       get-config-current_level:0
+</pre>
+<p>First verify that the base_frequency displayed by the cpufreq sysfs is correct:</p>
+<pre class="literal-block">
+# cat /sys/devices/system/cpu/cpu0/cpufreq/base_frequency
+2600000
+</pre>
+<p>This matches the base-frequency (MHz) field value displayed from the
+&quot;perf-profile info&quot; command for performance level 0(cpufreq frequency is in
+KHz).</p>
+<p>To check if the average frequency is equal to the base frequency for a 100% busy
+workload, disable turbo:</p>
+<pre class="literal-block">
+# echo 1 &gt; /sys/devices/system/cpu/intel_pstate/no_turbo
+</pre>
+<p>Then runs a busy workload on all CPUs, for example:</p>
+<pre class="literal-block">
+#stress -c 64
+</pre>
+<p>To verify the base frequency, run turbostat:</p>
+<pre class="literal-block">
+#turbostat -c 0-13 --show Package,Core,CPU,Bzy_MHz -i 1
+
+ Package       Core    CPU     Bzy_MHz
+               -       -       2600
+ 0             0       0       2600
+ 0             1       1       2600
+ 0             2       2       2600
+ 0             3       3       2600
+ 0             4       4       2600
+ .             .       .       .
+</pre>
+</div>
+<div class="section" id="changing-performance-level">
+<h3>Changing performance level</h3>
+<p>To the change the performance level to 4, execute:</p>
+<pre class="literal-block">
+# intel-speed-select -d perf-profile set-config-level -l 4 -o
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     perf-profile
+       set_tdp_level:success
+</pre>
+<p>In the command above, &quot;-o&quot; is optional. If it is specified, then it will also
+offline CPUs which are not present in the enable_cpu_mask for this performance
+level.</p>
+<p>Now if the base_frequency is checked:</p>
+<pre class="literal-block">
+#cat /sys/devices/system/cpu/cpu0/cpufreq/base_frequency
+2800000
+</pre>
+<p>Which shows that the base frequency now increased from 2600 MHz at performance
+level 0 to 2800 MHz at performance level 4. As a result, any workload, which can
+use fewer CPUs, can see a boost of 200 MHz compared to performance level 0.</p>
+</div>
+<div class="section" id="check-presence-of-other-intel-sst-features">
+<h3>Check presence of other Intel SST features</h3>
+<p>Each of the performance profiles also specifies weather there is support of
+other two Intel SST features (Intel Speed Select Technology - Base Frequency
+(Intel SST-BF) and Intel Speed Select Technology - Turbo Frequency (Intel
+SST-TF)).</p>
+<p>For example, from the output of &quot;perf-profile info&quot; above, for level 0 and level
+4:</p>
+<dl class="docutils">
+<dt>For level 0::</dt>
+<dd>speed-select-turbo-freq:disabled
+speed-select-base-freq:disabled</dd>
+<dt>For level 4::</dt>
+<dd>speed-select-turbo-freq:disabled
+speed-select-base-freq:unsupported</dd>
+</dl>
+<p>Given these results, the “speed-select-base-freq” (Intel SST-BF) in level 4
+changed from &quot;disabled&quot; to &quot;unsupported&quot; compared to performance level 0.</p>
+<p>This means that at performance level 4, the &quot;speed-select-base-freq&quot; feature is
+not supported. However, at performance level 0, this feature is &quot;supported&quot;, but
+currently &quot;disabled&quot;, meaning the user has not activated this feature. Whereas
+&quot;speed-select-turbo-freq&quot; (Intel SST-TF) is supported at both performance
+levels, but currently not activated by the user.</p>
+<p>The Intel SST-BF and the Intel SST-TF features are built on a foundation
+technology called Intel Speed Select Technology - Core Power (Intel SST-CP).
+The platform firmware enables this feature when Intel SST-BF or Intel SST-TF
+is supported on a platform.</p>
+</div>
+</div>
+<div class="section" id="intel-speed-select-technology-core-power-intel-sst-cp">
+<h2>Intel Speed Select Technology – Core Power (Intel SST-CP)</h2>
+<p>Intel Speed Select Technology – Core Power (Intel SST-CP) is an interface that
+allows users to define per core priority. This defines a mechanism to distribute
+power among cores when there is a power constrained scenario. This defines a
+class of service (CLOS) configuration.</p>
+<p>The user can configure up to 4 class of service configurations. Each CLOS group
+configuration allows definitions of parameters, which affects how the frequency
+can be limited and power is distributed. Each CPU core can be tied to a class of
+service and hence an associated priority. The granularity is at core level not
+at per CPU level.</p>
+<div class="section" id="enable-clos-based-prioritization">
+<h3>Enable CLOS based prioritization</h3>
+<p>To use CLOS based prioritization feature, firmware must be informed to enable
+and use a priority type. There is a default per platform priority type, which
+can be changed with optional command line parameter.</p>
+<p>To enable and check the options, execute:</p>
+<pre class="literal-block">
+# intel-speed-select core-power enable --help
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+Enable core-power for a package/die
+       Clos Enable: Specify priority type with [--priority|-p]
+                0: Proportional, 1: Ordered
+</pre>
+<p>There are two types of priority types:</p>
+<ul class="simple">
+<li>Ordered</li>
+</ul>
+<p>Priority for ordered throttling is defined based on the index of the assigned
+CLOS group. Where CLOS0 gets highest priority (throttled last).</p>
+<p>Priority order is:
+CLOS0 &gt; CLOS1 &gt; CLOS2 &gt; CLOS3.</p>
+<ul class="simple">
+<li>Proportional</li>
+</ul>
+<p>When proportional priority is used, there is an additional parameter called
+frequency_weight, which can be specified per CLOS group. The goal of
+proportional priority is to provide each core with the requested min., then
+distribute all remaining (excess/deficit) budgets in proportion to a defined
+weight. This proportional priority can be configured using &quot;core-power config&quot;
+command.</p>
+<p>To enable with the platform default priority type, execute:</p>
+<pre class="literal-block">
+# intel-speed-select core-power enable
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     core-power
+       enable:success
+package-1
+ die-0
+   cpu-6
+     core-power
+       enable:success
+</pre>
+<p>The scope of this enable is per package or die scoped when a package contains
+multiple dies. To check if CLOS is enabled and get priority type, &quot;core-power
+info&quot; command can be used. For example to check the status of core-power feature
+on CPU 0, execute:</p>
+<pre class="literal-block">
+# intel-speed-select -c 0 core-power info
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     core-power
+       enable-status:1
+       priority-type:0
+</pre>
+</div>
+<div class="section" id="configuring-clos-groups">
+<h3>Configuring CLOS groups</h3>
+<p>Each CLOS group has its own attributes including min, max, freq_weight and
+desired. These parameters can be configured with &quot;core-power config&quot; command.
+Defaults will be used if user skips setting a parameter except clos id, which is
+mandatory. To check core-power config options, execute:</p>
+<pre class="literal-block">
+# intel-speed-select core-power config --help
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+Set core-power configuration for one of the four clos ids
+       Specify targeted clos id with [--clos|-c]
+       Specify clos Proportional Priority [--weight|-w]
+       Specify clos min in MHz with [--min|-n]
+       Specify clos max in MHz with [--max|-m]
+       Specify clos desired in MHz with [--desired|-d]
+</pre>
+<p>For example:</p>
+<pre class="literal-block">
+# intel-speed-select core-power config -c 0
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+clos epp is not specified, default: 0
+clos frequency weight is not specified, default: 0
+clos min is not specified, default: 0 MHz
+clos max is not specified, default: 25500 MHz
+clos desired is not specified, default: 0
+package-0
+ die-0
+   cpu-0
+     core-power
+       config:success
+package-1
+ die-0
+   cpu-6
+     core-power
+       config:success
+</pre>
+<p>The user has the option to change defaults. For example, the user can change the
+&quot;min&quot; and set the base frequency to always get guaranteed base frequency.</p>
+</div>
+<div class="section" id="get-the-current-clos-configuration">
+<h3>Get the current CLOS configuration</h3>
+<p>To check the current configuration, &quot;core-power get-config&quot; can be used. For
+example, to get the configuration of CLOS 0:</p>
+<pre class="literal-block">
+# intel-speed-select core-power get-config -c 0
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     core-power
+       clos:0
+       epp:0
+       clos-proportional-priority:0
+       clos-min:0 MHz
+       clos-max:25500 MHz
+       clos-desired:0
+package-1
+ die-0
+   cpu-6
+     core-power
+       clos:0
+       epp:0
+       clos-proportional-priority:0
+       clos-min:0 MHz
+       clos-max:25500 MHz
+       clos-desired:0
+</pre>
+</div>
+<div class="section" id="associating-a-cpu-with-a-clos-group">
+<h3>Associating a CPU with a CLOS group</h3>
+<p>To associate a CPU to a CLOS group &quot;core-power assoc&quot; command can be used:</p>
+<pre class="literal-block">
+# intel-speed-select core-power assoc --help
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+Associate a clos id to a CPU
+       Specify targeted clos id with [--clos|-c]
+</pre>
+<p>For example to associate CPU 10 to CLOS group 3, execute:</p>
+<pre class="literal-block">
+# intel-speed-select -c 10 core-power assoc -c 3
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-10
+     core-power
+       assoc:success
+</pre>
+<p>Once a CPU is associated, its sibling CPUs are also associated to a CLOS group.
+Once associated, avoid changing Linux “cpufreq” subsystem scaling frequency
+limits.</p>
+<p>To check the existing association for a CPU, &quot;core-power get-assoc&quot; command can
+be used. For example, to get association of CPU 10, execute:</p>
+<pre class="literal-block">
+# intel-speed-select -c 10 core-power get-assoc
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-1
+ die-0
+   cpu-10
+     get-assoc
+       clos:3
+</pre>
+<p>This shows that CPU 10 is part of a CLOS group 3.</p>
+</div>
+<div class="section" id="disable-clos-based-prioritization">
+<h3>Disable CLOS based prioritization</h3>
+<p>To disable, execute:</p>
+<pre class="literal-block">
+# intel-speed-select core-power disable
+</pre>
+<p>Some features like Intel SST-TF can only be enabled when CLOS based prioritization
+is enabled. For this reason, disabling while Intel SST-TF is enabled can cause
+Intel SST-TF to fail. This will cause the &quot;disable&quot; command to display an error
+if Intel SST-TF is already enabled. In turn, to disable, the Intel SST-TF
+feature must be disabled first.</p>
+</div>
+</div>
+<div class="section" id="intel-speed-select-technology-base-frequency-intel-sst-bf">
+<h2>Intel Speed Select Technology - Base Frequency (Intel SST-BF)</h2>
+<p>The Intel Speed Select Technology - Base Frequency (Intel SST-BF) feature lets
+the user control base frequency. If some critical workload threads demand
+constant high guaranteed performance, then this feature can be used to execute
+the thread at higher base frequency on specific sets of CPUs (high priority
+CPUs) at the cost of lower base frequency (low priority CPUs) on other CPUs.
+This feature does not require offline of the low priority CPUs.</p>
+<p>The support of Intel SST-BF depends on the Intel Speed Select Technology -
+Performance Profile (Intel SST-PP) performance level configuration. It is
+possible that only certain performance levels support Intel SST-BF. It is also
+possible that only base performance level (level = 0) has support of Intel
+SST-BF. Consequently, first select the desired performance level to enable this
+feature.</p>
+<p>In the system under test here, Intel SST-BF is supported at the base
+performance level 0, but currently disabled. For example for the level 0:</p>
+<pre class="literal-block">
+# intel-speed-select -c 0 perf-profile info -l 0
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     perf-profile-level-0
+       ...
+
+       speed-select-base-freq:disabled
+       ...
+</pre>
+<p>Before enabling Intel SST-BF and measuring its impact on a workload
+performance, execute some workload and measure performance and get a baseline
+performance to compare against.</p>
+<p>Here the user wants more guaranteed performance. For this reason, it is likely
+that turbo is disabled. To disable turbo, execute:</p>
+<pre class="literal-block">
+#echo 1 &gt; /sys/devices/system/cpu/intel_pstate/no_turbo
+</pre>
+<p>Based on the output of the &quot;intel-speed-select perf-profile info -l 0&quot; base
+frequency of guaranteed frequency 2600 MHz.</p>
+<div class="section" id="measure-baseline-performance-for-comparison">
+<h3>Measure baseline performance for comparison</h3>
+<p>To compare, pick a multi-threaded workload where each thread can be scheduled on
+separate CPUs. &quot;Hackbench pipe&quot; test is a good example on how to improve
+performance using Intel SST-BF.</p>
+<p>Below, the workload is measuring average scheduler wakeup latency, so a lower
+number means better performance:</p>
+<pre class="literal-block">
+# taskset -c 3,4 perf bench -r 100 sched pipe
+# Running 'sched/pipe' benchmark:
+# Executed 1000000 pipe operations between two processes
+    Total time: 6.102 [sec]
+      6.102445 usecs/op
+        163868 ops/sec
+</pre>
+<p>While running the above test, if we take turbostat output, it will show us that
+2 of the CPUs are busy and reaching max. frequency (which would be the base
+frequency as the turbo is disabled). The turbostat output:</p>
+<pre class="literal-block">
+#turbostat -c 0-13 --show Package,Core,CPU,Bzy_MHz -i 1
+Package        Core    CPU     Bzy_MHz
+0              0       0       1000
+0              1       1       1005
+0              2       2       1000
+0              3       3       2600
+0              4       4       2600
+0              5       5       1000
+0              6       6       1000
+0              7       7       1005
+0              8       8       1005
+0              9       9       1000
+0              10      10      1000
+0              11      11      995
+0              12      12      1000
+0              13      13      1000
+</pre>
+<p>From the above turbostat output, both CPU 3 and 4 are very busy and reaching
+full guaranteed frequency of 2600 MHz.</p>
+</div>
+<div class="section" id="intel-sst-bf-capabilities">
+<h3>Intel SST-BF Capabilities</h3>
+<p>To get capabilities of Intel SST-BF for the current performance level 0,
+execute:</p>
+<pre class="literal-block">
+# intel-speed-select base-freq info -l 0
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     speed-select-base-freq
+       high-priority-base-frequency(MHz):3000
+       high-priority-cpu-mask:00000216,00002160
+       high-priority-cpu-list:5,6,8,13,33,34,36,41
+       low-priority-base-frequency(MHz):2400
+       tjunction-temperature(C):125
+       thermal-design-power(W):205
+</pre>
+<p>The above capabilities show that there are some CPUs on this system that can
+offer base frequency of 3000 MHz compared to the standard base frequency at this
+performance levels. Nevertheless, these CPUs are fixed, and they are presented
+via high-priority-cpu-list/high-priority-cpu-mask. But if this Intel SST-BF
+feature is selected, the low priorities CPUs (which are not in
+high-priority-cpu-list) can only offer up to 2400 MHz. As a result, if this
+clipping of low priority CPUs is acceptable, then the user can enable Intel
+SST-BF feature particularly for the above &quot;sched pipe&quot; workload since only two
+CPUs are used, they can be scheduled on high priority CPUs and can get boost of
+400 MHz.</p>
+</div>
+<div class="section" id="enable-intel-sst-bf">
+<h3>Enable Intel SST-BF</h3>
+<p>To enable Intel SST-BF feature, execute:</p>
+<pre class="literal-block">
+# intel-speed-select base-freq enable -a
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     base-freq
+       enable:success
+package-1
+ die-0
+   cpu-14
+     base-freq
+       enable:success
+</pre>
+<p>In this case, -a option is optional. This not only enables Intel SST-BF, but it
+also adjusts the priority of cores using Intel Speed Select Technology – Core
+Power (Intel SST-CP) features. This option sets the minimum performance of each
+Intel Speed Select Technology - Performance Profile (Intel SST-PP) class to
+maximum performance so that the hardware will give maximum performance possible
+for each CPU.</p>
+<p>If -a option is not used, then the following steps are required before enabling
+Intel SST-BF:</p>
+<ul class="simple">
+<li>Discover Intel SST-BF and note low and high priority base frequency</li>
+<li>Note the high prioity CPU list</li>
+<li>Enable CLOS using core-power feature set</li>
+<li>Configure CLOS parameters. Use CLOS.min to set to minimum performance</li>
+<li>Subscribe desired CPUs to CLOS groups</li>
+</ul>
+<p>With this configuration, if the same workload is executed by pinning the
+workload to high priority CPUs (CPU 5 and 6 in this case):</p>
+<pre class="literal-block">
+#taskset -c 5,6 perf bench -r 100 sched pipe
+# Running 'sched/pipe' benchmark:
+# Executed 1000000 pipe operations between two processes
+    Total time: 5.627 [sec]
+      5.627922 usecs/op
+        177685 ops/sec
+</pre>
+<p>This way, by enabling Intel SST-BF, the performance of this benchmark is
+improved (latency reduced) by 7.79%. From the turbostat output, it can be
+observed that the high priority CPUs reached 3000 MHz compared to 2600 MHz.
+The turbostat output:</p>
+<pre class="literal-block">
+#turbostat -c 0-13 --show Package,Core,CPU,Bzy_MHz -i 1
+Package        Core    CPU     Bzy_MHz
+0              0       0       2151
+0              1       1       2166
+0              2       2       2175
+0              3       3       2175
+0              4       4       2175
+0              5       5       3000
+0              6       6       3000
+0              7       7       2180
+0              8       8       2662
+0              9       9       2176
+0              10      10      2175
+0              11      11      2176
+0              12      12      2176
+0              13      13      2661
+</pre>
+</div>
+<div class="section" id="disable-intel-sst-bf">
+<h3>Disable Intel SST-BF</h3>
+<p>To disable the Intel SST-BF feature, execute:</p>
+<pre class="literal-block">
+# intel-speed-select base-freq disable -a
+</pre>
+</div>
+</div>
+<div class="section" id="intel-speed-select-technology-turbo-frequency-intel-sst-tf">
+<h2>Intel Speed Select Technology - Turbo Frequency (Intel SST-TF)</h2>
+<p>This feature enables the ability to set different &quot;All core turbo ratio limits&quot;
+to cores based on the priority. By using this feature, some cores can be
+configured to get higher turbo frequency by designating them as high priority at
+the cost of lower or no turbo frequency on the low priority cores.</p>
+<p>For this reason, this feature is only useful when system is busy utilizing all
+CPUs, but the user wants some configurable option to get high performance on
+some CPUs.</p>
+<p>The support of Intel Speed Select Technology - Turbo Frequency (Intel SST-TF)
+depends on the Intel Speed Select Technology - Performance Profile (Intel
+SST-PP) performance level configuration. It is possible that only a certain
+performance level supports Intel SST-TF. It is also possible that only the base
+performance level (level = 0) has the support of Intel SST-TF. Hence, first
+select the desired performance level to enable this feature.</p>
+<p>In the system under test here, Intel SST-TF is supported at the base
+performance level 0, but currently disabled:</p>
+<pre class="literal-block">
+# intel-speed-select -c 0 perf-profile info -l 0
+Intel(R) Speed Select Technology
+package-0
+ die-0
+   cpu-0
+     perf-profile-level-0
+       ...
+       ...
+       speed-select-turbo-freq:disabled
+       ...
+       ...
+</pre>
+<p>To check if performance can be improved using Intel SST-TF feature, get the turbo
+frequency properties with Intel SST-TF enabled and compare to the base turbo
+capability of this system.</p>
+<div class="section" id="get-base-turbo-capability">
+<h3>Get Base turbo capability</h3>
+<p>To get the base turbo capability of performance level 0, execute:</p>
+<pre class="literal-block">
+# intel-speed-select perf-profile info -l 0
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     perf-profile-level-0
+       ...
+       ...
+       turbo-ratio-limits-sse
+         bucket-0
+           core-count:2
+           max-turbo-frequency(MHz):3200
+         bucket-1
+           core-count:4
+           max-turbo-frequency(MHz):3100
+         bucket-2
+           core-count:6
+           max-turbo-frequency(MHz):3100
+         bucket-3
+           core-count:8
+           max-turbo-frequency(MHz):3100
+         bucket-4
+           core-count:10
+           max-turbo-frequency(MHz):3100
+         bucket-5
+           core-count:12
+           max-turbo-frequency(MHz):3100
+         bucket-6
+           core-count:14
+           max-turbo-frequency(MHz):3100
+         bucket-7
+           core-count:16
+           max-turbo-frequency(MHz):3100
+</pre>
+<p>Based on the data above, when all the CPUS are busy, the max. frequency of 3100
+MHz can be achieved. If there is some busy workload on cpu 0 - 11 (e.g. stress)
+and on CPU 12 and 13, execute &quot;hackbench pipe&quot; workload:</p>
+<pre class="literal-block">
+# taskset -c 12,13 perf bench -r 100 sched pipe
+# Running 'sched/pipe' benchmark:
+# Executed 1000000 pipe operations between two processes
+    Total time: 5.705 [sec]
+      5.705488 usecs/op
+        175269 ops/sec
+</pre>
+<p>The turbostat output:</p>
+<pre class="literal-block">
+#turbostat -c 0-13 --show Package,Core,CPU,Bzy_MHz -i 1
+Package        Core    CPU     Bzy_MHz
+0              0       0       3000
+0              1       1       3000
+0              2       2       3000
+0              3       3       3000
+0              4       4       3000
+0              5       5       3100
+0              6       6       3100
+0              7       7       3000
+0              8       8       3100
+0              9       9       3000
+0              10      10      3000
+0              11      11      3000
+0              12      12      3100
+0              13      13      3100
+</pre>
+<p>Based on turbostat output, the performance is limited by frequency cap of 3100
+MHz. To check if the hackbench performance can be improved for CPU 12 and CPU
+13, first check the capability of the Intel SST-TF feature for this performance
+level.</p>
+</div>
+<div class="section" id="get-intel-sst-tf-capability">
+<h3>Get Intel SST-TF Capability</h3>
+<p>To get the capability, the &quot;turbo-freq info&quot; command can be used:</p>
+<pre class="literal-block">
+# intel-speed-select turbo-freq info -l 0
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-0
+     speed-select-turbo-freq
+         bucket-0
+           high-priority-cores-count:2
+           high-priority-max-frequency(MHz):3200
+           high-priority-max-avx2-frequency(MHz):3200
+           high-priority-max-avx512-frequency(MHz):3100
+         bucket-1
+           high-priority-cores-count:4
+           high-priority-max-frequency(MHz):3100
+           high-priority-max-avx2-frequency(MHz):3000
+           high-priority-max-avx512-frequency(MHz):2900
+         bucket-2
+           high-priority-cores-count:6
+           high-priority-max-frequency(MHz):3100
+           high-priority-max-avx2-frequency(MHz):3000
+           high-priority-max-avx512-frequency(MHz):2900
+         speed-select-turbo-freq-clip-frequencies
+           low-priority-max-frequency(MHz):2600
+           low-priority-max-avx2-frequency(MHz):2400
+           low-priority-max-avx512-frequency(MHz):2100
+</pre>
+<p>Based on the output above, there is an Intel SST-TF bucket for which there are
+two high priority cores. If only two high priority cores are set, then max.
+turbo frequency on those cores can be increased to 3200 MHz. This is 100 MHz
+more than the base turbo capability for all cores.</p>
+<p>In turn, for the hackbench workload, two CPUs can be set as high priority and
+rest as low priority. One side effect is that once enabled, the low priority
+cores will be clipped to a lower frequency of 2600 MHz.</p>
+</div>
+<div class="section" id="enable-intel-sst-tf">
+<h3>Enable Intel SST-TF</h3>
+<p>To enable Intel SST-TF, execute:</p>
+<pre class="literal-block">
+# intel-speed-select -c 12,13 turbo-freq enable -a
+Intel(R) Speed Select Technology
+Executing on CPU model: X
+package-0
+ die-0
+   cpu-12
+     turbo-freq
+       enable:success
+package-0
+ die-0
+   cpu-13
+     turbo-freq
+       enable:success
+package--1
+ die-0
+   cpu-63
+     turbo-freq --auto
+       enable:success
+</pre>
+<p>In this case, the option &quot;-a&quot; is optional. If set, it enables Intel SST-TF
+feature and also sets the CPUs to high and and low priority using Intel Speed
+Select Technology – Core Power (Intel SST-CP) features. The CPU numbers passed
+with &quot;-c&quot; arguments are marked as high priority, including its siblings.</p>
+<p>If -a option is not used, then the following steps are required before enabling
+Intel SST-TF:</p>
+<ul class="simple">
+<li>Discover Intel SST-TF and note buckets of high priority cores and maximum frequency</li>
+<li>Enable CLOS using core-power feature set - Configure CLOS parameters</li>
+<li>Subscribe desired CPUs to CLOS groups making sure that high priority cores are set to the maximum frequency</li>
+</ul>
+<p>If the same hackbench workload is executed, schedule hackbench threads on high
+priority CPUs:</p>
+<pre class="literal-block">
+#taskset -c 12,13 perf bench -r 100 sched pipe
+# Running 'sched/pipe' benchmark:
+# Executed 1000000 pipe operations between two processes
+    Total time: 5.510 [sec]
+      5.510165 usecs/op
+        180826 ops/sec
+</pre>
+<p>This improved performance by around 3.3% improvement on a busy system. Here the
+turbostat output will show that the CPU 12 and CPU 13 are getting 100 MHz boost.
+The turbostat output:</p>
+<pre class="literal-block">
+#turbostat -c 0-13 --show Package,Core,CPU,Bzy_MHz -i 1
+Package        Core    CPU     Bzy_MHz
+...
+0              12      12      3200
+0              13      13      3200
+</pre>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>
