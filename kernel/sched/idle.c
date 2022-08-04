@@ -359,6 +359,8 @@ void play_idle_precise(u64 duration_ns, u64 latency_ns)
 {
 	struct idle_timer it;
 
+	trace_play_idle_enter(duration_ns, smp_processor_id());
+
 	/*
 	 * Only FIFO tasks can disable the tick since they don't need the forced
 	 * preemption.
@@ -389,6 +391,7 @@ void play_idle_precise(u64 duration_ns, u64 latency_ns)
 
 	preempt_fold_need_resched();
 	preempt_enable();
+	trace_play_idle_exit(duration_ns, smp_processor_id());
 }
 EXPORT_SYMBOL_GPL(play_idle_precise);
 

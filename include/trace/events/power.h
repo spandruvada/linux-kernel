@@ -39,6 +39,20 @@ DEFINE_EVENT(cpu, cpu_idle,
 
 	TP_ARGS(state, cpu_id)
 );
+ 
+DEFINE_EVENT(cpu, play_idle_enter,
+
+       TP_PROTO(unsigned int duration, unsigned int cpu_id),
+
+       TP_ARGS(duration, cpu_id)
+);
+
+DEFINE_EVENT(cpu, play_idle_exit,
+
+       TP_PROTO(unsigned int duration, unsigned int cpu_id),
+
+       TP_ARGS(duration, cpu_id)
+);
 
 TRACE_EVENT(powernv_throttle,
 
