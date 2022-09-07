@@ -70,6 +70,8 @@ struct idle_inject_device {
 	unsigned int idle_duration_us;
 	unsigned int run_duration_us;
 	unsigned int latency_us;
+	int (*idle_inject_begin)(unsigned int cpu, unsigned int idle_duration, unsigned int run_duration);
+	void (*idle_inject_end)(unsigned int cpu, unsigned int idle_duration, unsigned int run_duration);
 	unsigned long cpumask[];
 };
 
@@ -132,6 +134,7 @@ static void idle_inject_fn(unsigned int cpu)
 {
 	struct idle_inject_device *ii_dev;
 	struct idle_inject_thread *iit;
+	int ret;
 
 	ii_dev = per_cpu(idle_inject_device, cpu);
 	iit = per_cpu_ptr(&idle_inject_thread, cpu);
@@ -141,8 +144,18 @@ static void idle_inject_fn(unsigned int cpu)
 	 */
 	iit->should_run = 0;
 
+	if (ii_dev->idle_inject_begin) {
+		ret = ii_dev->idle_inject_begin(cpu, READ_ONCE(ii_dev->idle_duration_us), READ_ONCE(ii_dev->run_duration_us));
+		if (ret)
+			goto skip;
+	}
+
 	play_idle_precise(READ_ONCE(ii_dev->idle_duration_us) * NSEC_PER_USEC,
 			  READ_ONCE(ii_dev->latency_us) * NSEC_PER_USEC);
+
+skip:
+	if (ii_dev->idle_inject_end)
+		ii_dev->idle_inject_end(cpu, READ_ONCE(ii_dev->idle_duration_us), READ_ONCE(ii_dev->run_duration_us));
 }
 
 /**
@@ -302,7 +315,10 @@ static int idle_inject_should_run(unsigned int cpu)
  * Return: NULL if memory allocation fails, idle injection control device
  * pointer on success.
  */
-struct idle_inject_device *idle_inject_register(struct cpumask *cpumask)
+struct idle_inject_device *idle_inject_register(struct cpumask *cpumask,
+						int (*idle_inject_begin)(unsigned int cpu, unsigned int idle_duration, unsigned int run_duration),
+						void (*idle_inject_end)(unsigned int cpu, unsigned int idle_duration, unsigned int run_duration)
+						)
 {
 	struct idle_inject_device *ii_dev;
 	int cpu, cpu_rb;
@@ -315,6 +331,8 @@ struct idle_inject_device *idle_inject_register(struct cpumask *cpumask)
 	hrtimer_init(&ii_dev->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	ii_dev->timer.function = idle_inject_timer_fn;
 	ii_dev->latency_us = UINT_MAX;
+	ii_dev->idle_inject_begin = idle_inject_begin;
+	ii_dev->idle_inject_end = idle_inject_end;
 
 	for_each_cpu(cpu, to_cpumask(ii_dev->cpumask)) {
 

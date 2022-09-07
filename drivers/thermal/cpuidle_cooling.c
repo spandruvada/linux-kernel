@@ -184,7 +184,7 @@ static int __cpuidle_cooling_register(struct device_node *np,
 		goto out;
 	}
 
-	ii_dev = idle_inject_register(drv->cpumask);
+	ii_dev = idle_inject_register(drv->cpumask, NULL, NULL);
 	if (!ii_dev) {
 		ret = -EINVAL;
 		goto out_kfree;

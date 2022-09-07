@@ -11,7 +11,9 @@
 /* private idle injection device structure */
 struct idle_inject_device;
 
-struct idle_inject_device *idle_inject_register(struct cpumask *cpumask);
+struct idle_inject_device *idle_inject_register(struct cpumask *cpumask,
+						int (*idle_inject_begin)(unsigned int cpu, unsigned int idle_duration, unsigned int run_duration),
+						void (*idle_inject_end)(unsigned int cpu, unsigned int idle_duration, unsigned int run_duration));
 
 void idle_inject_unregister(struct idle_inject_device *ii_dev);
 
