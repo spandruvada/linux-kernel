@@ -114,3 +114,13 @@ config INTEL_HFI_THERMAL
 	  These capabilities may change as a result of changes in the operating
 	  conditions of the system such power and thermal limits. If selected,
 	  the kernel relays updates in CPUs' capabilities to userspace.
+
+config INTEL_CPU_IDLE_COOLING
+	tristate "Intel CPU idle cooling device"
+	depends on IDLE_INJECT
+	help
+	  This implements the CPU cooling mechanism through
+	  idle injection. This will throttle the CPU by injecting
+	  idle cycle.
+	  Unlike Intel Power clamp driver, this driver provides
+	  idle injection for each CPU.
