@@ -364,6 +364,7 @@ static enum hrtimer_restart idle_inject_timer_fn(struct hrtimer *timer)
 void play_idle_precise(u64 duration_ns, u64 latency_ns)
 {
 	struct idle_timer it;
+	ktime_t remaining;
 
 	trace_play_idle_enter(duration_ns, smp_processor_id());
 
@@ -378,6 +379,8 @@ void play_idle_precise(u64 duration_ns, u64 latency_ns)
 	WARN_ON_ONCE(!duration_ns);
 	WARN_ON_ONCE(current->mm);
 
+	remaining = ns_to_ktime(duration_ns);
+
 	do {
 		rcu_sleep_check();
 		preempt_disable();
@@ -387,10 +390,15 @@ void play_idle_precise(u64 duration_ns, u64 latency_ns)
 		it.done = 0;
 		hrtimer_init_on_stack(&it.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_HARD);
 		it.timer.function = idle_inject_timer_fn;
-		hrtimer_start(&it.timer, ns_to_ktime(duration_ns), HRTIMER_MODE_REL_PINNED_HARD);
+		hrtimer_start(&it.timer, remaining, HRTIMER_MODE_REL_PINNED_HARD);
 
-		while (!READ_ONCE(it.done))
+		while (!READ_ONCE(it.done) && !task_is_running(__this_cpu_read(ksoftirqd)))
 			do_idle();
+
+		remaining = hrtimer_get_remaining(&it.timer);
+
+		if (remaining > 0 && !READ_ONCE(it.done))
+			trace_printk("remaining: %llu\n",  ktime_to_ns(remaining));
 
 		hrtimer_cancel(&it.timer);
 
