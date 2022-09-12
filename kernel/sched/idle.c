@@ -49,6 +49,12 @@ static int __init cpu_idle_nopoll_setup(char *__unused)
 __setup("hlt", cpu_idle_nopoll_setup);
 #endif
 
+/* FIXME: handle __cpuidle / instrumentation_begin()/end() */
+static bool idle_loop_should_break(void)
+{
+	return need_resched() || task_is_running(__this_cpu_read(ksoftirqd));
+}
+
 static noinline int __cpuidle cpu_idle_poll(void)
 {
 	trace_cpu_idle(0, smp_processor_id());
@@ -56,7 +62,7 @@ static noinline int __cpuidle cpu_idle_poll(void)
 	rcu_idle_enter();
 	local_irq_enable();
 
-	while (!tif_need_resched() &&
+	while (!idle_loop_should_break() &&
 	       (cpu_idle_force_poll || tick_check_broadcast_expired()))
 		cpu_relax();
 
@@ -174,7 +180,7 @@ static void cpuidle_idle_call(void)
 	 * Check if the idle task must be rescheduled. If it is the
 	 * case, exit the function after re-enabling the local irq.
 	 */
-	if (need_resched()) {
+	if (idle_loop_should_break()) {
 		local_irq_enable();
 		return;
 	}
@@ -276,7 +282,7 @@ static void do_idle(void)
 	__current_set_polling();
 	tick_nohz_idle_enter();
 
-	while (!need_resched()) {
+	while (!idle_loop_should_break()) {
 		rmb();
 
 		local_irq_disable();
@@ -372,25 +378,34 @@ void play_idle_precise(u64 duration_ns, u64 latency_ns)
 	WARN_ON_ONCE(!duration_ns);
 	WARN_ON_ONCE(current->mm);
 
-	rcu_sleep_check();
-	preempt_disable();
-	current->flags |= PF_IDLE;
-	cpuidle_use_deepest_state(latency_ns);
+	do {
+		rcu_sleep_check();
+		preempt_disable();
+		current->flags |= PF_IDLE;
+		cpuidle_use_deepest_state(latency_ns);
 
-	it.done = 0;
-	hrtimer_init_on_stack(&it.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_HARD);
-	it.timer.function = idle_inject_timer_fn;
-	hrtimer_start(&it.timer, ns_to_ktime(duration_ns),
-		      HRTIMER_MODE_REL_PINNED_HARD);
+		it.done = 0;
+		hrtimer_init_on_stack(&it.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_HARD);
+		it.timer.function = idle_inject_timer_fn;
+		hrtimer_start(&it.timer, ns_to_ktime(duration_ns), HRTIMER_MODE_REL_PINNED_HARD);
 
-	while (!READ_ONCE(it.done))
-		do_idle();
+		while (!READ_ONCE(it.done))
+			do_idle();
 
-	cpuidle_use_deepest_state(0);
-	current->flags &= ~PF_IDLE;
+		hrtimer_cancel(&it.timer);
 
-	preempt_fold_need_resched();
-	preempt_enable();
+		cpuidle_use_deepest_state(0);
+		current->flags &= ~PF_IDLE;
+
+		preempt_fold_need_resched();
+		preempt_enable();
+
+		/* Give ksoftirqd 1 jiffy to get a chance to start its job */
+		if (!READ_ONCE(it.done) && task_is_running(__this_cpu_read(ksoftirqd))) {
+			__set_current_state(TASK_UNINTERRUPTIBLE);
+			schedule_timeout(1);
+		}
+	} while (!READ_ONCE(it.done));
 	trace_play_idle_exit(duration_ns, smp_processor_id());
 }
 EXPORT_SYMBOL_GPL(play_idle_precise);
