@@ -1031,6 +1031,8 @@ static bool report_idle_softirq(void)
 		ratelimit++;
 	}
 
+	trace_printk("soft irq pending\n");
+
 	return true;
 }
 
