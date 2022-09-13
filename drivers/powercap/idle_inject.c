@@ -150,7 +150,7 @@ static void idle_inject_fn(unsigned int cpu)
 			goto skip;
 	}
 
-	play_idle_precise(READ_ONCE(ii_dev->idle_duration_us) * NSEC_PER_USEC,
+	play_idle_precise(READ_ONCE(ii_dev->idle_duration_us) * NSEC_PER_USEC, 0,
 			  READ_ONCE(ii_dev->latency_us) * NSEC_PER_USEC);
 
 skip:

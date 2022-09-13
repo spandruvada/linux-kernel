@@ -361,10 +361,10 @@ static enum hrtimer_restart idle_inject_timer_fn(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
-void play_idle_precise(u64 duration_ns, u64 latency_ns)
+int play_idle_precise(u64 duration_ns, u64 duration_ns_max, u64 latency_ns)
 {
 	struct idle_timer it;
-	ktime_t remaining;
+	ktime_t remaining, end_time;
 
 	trace_play_idle_enter(duration_ns, smp_processor_id());
 
@@ -380,6 +380,8 @@ void play_idle_precise(u64 duration_ns, u64 latency_ns)
 	WARN_ON_ONCE(current->mm);
 
 	remaining = ns_to_ktime(duration_ns);
+
+	end_time = ktime_add_ns(ktime_get(), duration_ns_max);
 
 	do {
 		rcu_sleep_check();
@@ -402,6 +404,11 @@ void play_idle_precise(u64 duration_ns, u64 latency_ns)
 
 		hrtimer_cancel(&it.timer);
 
+		if (!READ_ONCE(it.done) && duration_ns_max) {
+			if (ktime_after(ktime_get(), end_time))
+				return -EAGAIN;
+		}
+
 		cpuidle_use_deepest_state(0);
 		current->flags &= ~PF_IDLE;
 
@@ -415,6 +422,8 @@ void play_idle_precise(u64 duration_ns, u64 latency_ns)
 		}
 	} while (!READ_ONCE(it.done));
 	trace_play_idle_exit(duration_ns, smp_processor_id());
+
+	return 0;
 }
 EXPORT_SYMBOL_GPL(play_idle_precise);
 

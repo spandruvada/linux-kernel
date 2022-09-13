@@ -190,11 +190,11 @@ void arch_cpu_idle_dead(void);
 int cpu_report_state(int cpu);
 int cpu_check_up_prepare(int cpu);
 void cpu_set_state_online(int cpu);
-void play_idle_precise(u64 duration_ns, u64 latency_ns);
+int play_idle_precise(u64 duration_ns, u64 max_duration_ns, u64 latency_ns);
 
 static inline void play_idle(unsigned long duration_us)
 {
-	play_idle_precise(duration_us * NSEC_PER_USEC, U64_MAX);
+	play_idle_precise(duration_us * NSEC_PER_USEC, 0, U64_MAX);
 }
 
 #ifdef CONFIG_HOTPLUG_CPU
