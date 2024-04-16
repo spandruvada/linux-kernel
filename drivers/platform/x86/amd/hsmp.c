@@ -907,6 +907,17 @@ static int hsmp_plat_dev_register(void)
 	return ret;
 }
 
+static bool hsmp_supported_profile(void)
+{
+	switch (acpi_gbl_FADT.preferred_profile) {
+	case PM_ENTERPRISE_SERVER:
+	case PM_SOHO_SERVER:
+	case PM_PERFORMANCE_SERVER:
+		return true;
+	}
+	return false;
+}
+
 static int __init hsmp_plt_init(void)
 {
 	int ret = -ENODEV;
@@ -914,6 +925,11 @@ static int __init hsmp_plt_init(void)
 	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD || boot_cpu_data.x86 < 0x19) {
 		pr_err("HSMP is not supported on Family:%x model:%x\n",
 		       boot_cpu_data.x86, boot_cpu_data.x86_model);
+		return ret;
+	}
+
+	if (!hsmp_supported_profile()) {
+		pr_err("HSMP is only supported on servers");
 		return ret;
 	}
 
